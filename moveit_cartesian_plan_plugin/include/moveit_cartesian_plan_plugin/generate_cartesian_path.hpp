@@ -19,6 +19,9 @@
 #ifndef GENERATE_CARTESIAN_PATH_H_
 #define GENERATE_CARTESIAN_PATH_H_
 
+//Lets it build in Kinetic
+namespace move_group_interface = moveit::planning_interface;
+
 typedef boost::shared_ptr<move_group_interface::MoveGroup> MoveGroupPtr;
 typedef boost::shared_ptr<robot_model_loader::RobotModelLoader> RobotModelLoaderPtr;
 
