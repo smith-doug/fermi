@@ -18,9 +18,15 @@ find_package(catkin REQUIRED COMPONENTS
   cartesian_impedance_msgs
 )
 
-find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
-
-include(${QT_USE_FILE})
+if("${qt_gui_cpp_USE_QT_MAJOR_VERSION} " STREQUAL "5 ")
+  find_package(Qt5Widgets REQUIRED)
+  find_package(Qt5Concurrent REQUIRED)
+  set(qt_LIBRARIES Qt5::Widgets Qt5::Concurrent)
+else()
+  find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
+  include(${QT_USE_FILE})
+  set(qt_LIBRARIES ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
+endif()
 
 ## I prefer the Qt signals and slots to avoid defining "emit", "slots",
 ## etc because they can conflict with boost signals, so define QT_NO_KEYWORDS here.
@@ -55,8 +61,12 @@ set(moveit_cartesian_plan_plugin_UIS
 
 set(moveit_cartesian_plan_plugin_INCLUDE_DIRECTORIES
   include
-  ${CMAKE_CURRENT_BINARY_DIR}
+  "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}"
 )
+
+if(NOT EXISTS "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
+  file(MAKE_DIRECTORY "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
+endif()
 
 catkin_package(
   INCLUDE_DIRS ${moveit_cartesian_plan_plugin_INCLUDE_DIRECTORIES}
@@ -71,12 +81,25 @@ catkin_package(
   visualization_msgs
 )
 
-qt4_wrap_cpp(moveit_cartesian_plan_plugin_MOCS ${moveit_cartesian_plan_plugin_HDRS})
-qt4_wrap_ui(moveit_cartesian_plan_plugin_UIS_H ${moveit_cartesian_plan_plugin_UIS})
+if("${qt_gui_cpp_USE_QT_MAJOR_VERSION} " STREQUAL "5 ")
+  qt5_wrap_cpp(moveit_cartesian_plan_plugin_MOCS ${moveit_cartesian_plan_plugin_HDRS})  
+else()
+  qt4_wrap_cpp(moveit_cartesian_plan_plugin_MOCS ${moveit_cartesian_plan_plugin_HDRS})
+endif()
+# ensure generated header files are being created in the devel space
+set(_cmake_current_binary_dir "${CMAKE_CURRENT_BINARY_DIR}")
+set(CMAKE_CURRENT_BINARY_DIR "${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
+if("${qt_gui_cpp_USE_QT_MAJOR_VERSION} " STREQUAL "5 ")
+  qt5_wrap_ui(moveit_cartesian_plan_plugin_UIS_H ${moveit_cartesian_plan_plugin_UIS})
+else()
+  qt4_wrap_ui(moveit_cartesian_plan_plugin_UIS_H ${moveit_cartesian_plan_plugin_UIS})
+endif()
+set(CMAKE_CURRENT_BINARY_DIR "${_cmake_current_binary_dir}")
+
 
 include_directories(${moveit_cartesian_plan_plugin_INCLUDE_DIRECTORIES} ${catkin_INCLUDE_DIRS})
 add_library(${PROJECT_NAME} ${moveit_cartesian_plan_plugin_SRCS} ${moveit_cartesian_plan_plugin_MOCS} ${moveit_cartesian_plan_plugin_UIS_H}) # ${moveit_cartesian_plan_plugin_UIS_H}
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${moveit_move_group_interface} yaml-cpp)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${qt_LIBRARIES} ${moveit_move_group_interface} yaml-cpp)
 ## target_link_libraries(${PROJECT_NAME} yaml-cpp)
 
 find_package(class_loader)
@@ -85,11 +108,11 @@ class_loader_hide_library_symbols(${PROJECT_NAME})
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+  #RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 
 install(PROGRAMS scripts/moveit_cartesian_plan_plugin
-  DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(FILES plugin.xml
