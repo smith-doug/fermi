@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning_interface
   tf
   tf_conversions
+  cartesian_impedance_msgs
 )
 
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
